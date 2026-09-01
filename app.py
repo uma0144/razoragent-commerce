@@ -26,7 +26,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-title {
-        font-size: 2.2rem;
+        font-size: 2.3rem;
         font-weight: 800;
         background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
         -webkit-background-clip: text;
@@ -46,11 +46,12 @@ st.markdown("""
         text-align: center;
     }
     .agent-step {
-        background: rgba(30, 41, 59, 0.6);
+        background: rgba(30, 41, 59, 0.7);
         border-left: 4px solid #38bdf8;
-        padding: 10px 14px;
-        margin-bottom: 8px;
-        border-radius: 0 8px 8px 0;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        border-radius: 0 10px 10px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -102,7 +103,7 @@ with st.sidebar:
     if rzp_client.is_live_configured:
         st.success("?? Connected to Live Razorpay Test API")
     else:
-        st.info("?? Running in **Smart Sandbox Mode** (Simulated Rails & UPI QR)")
+        st.info("?? Running in **Smart Sandbox Mode** (Simulated Rails & Dynamic UPI QR)")
 
     st.markdown("---")
     st.markdown("## ?? Session Financials")
@@ -128,33 +129,38 @@ tab_sim, tab_checkout, tab_growth, tab_failure, tab_audit, tab_catalog = st.tabs
 # 1. Autonomous AI Buyer Simulator Tab
 with tab_sim:
     st.markdown("### ?? Autonomous Agent-to-Agent Purchase Scenario")
-    st.write("Configure an autonomous procurement intent and trigger the AI buyer agent to negotiate, verify safety gating, and checkout.")
+    st.write("Enter any natural procurement command or choose a pre-configured scenario. The AI Buyer will query the AP2 protocol catalog, negotiate bundle discounts, evaluate safety caps, and execute payment.")
     
-    s_col1, s_col2 = st.columns([2, 1])
+    col_preset, col_custom = st.columns([1, 2])
     
-    with s_col1:
-        buyer_intent = st.selectbox(
-            "AI Buyer Agent Intent",
+    with col_preset:
+        preset_choice = st.selectbox(
+            "Quick Presets",
             options=[
-                "Deploy Cloud GPU Cluster for LLM Training (Target: GPU Cluster)",
-                "Procure Enterprise 24/7 Priority SLA Support Pass",
-                "Expand Vector DB Storage Tier for RAG Embeddings",
-                "Acquire 1M Agent Orchestration API Credits Tier"
+                "Deploy Cloud GPU Cluster for LLM Training (Target: ?8,000 budget)",
+                "Procure Enterprise 24/7 Priority SLA Support Pass (Target: ?2,500 budget)",
+                "Expand Vector DB Storage Tier for RAG Embeddings (Target: ?3,000 budget)",
+                "Acquire 1M Agent Orchestration API Credits Tier (Target: ?4,000 budget)",
+                "Custom Natural Language Command ??"
             ]
         )
         
-        intent_query_map = {
-            "Deploy Cloud GPU Cluster for LLM Training (Target: GPU Cluster)": "GPU",
-            "Procure Enterprise 24/7 Priority SLA Support Pass": "Support",
-            "Expand Vector DB Storage Tier for RAG Embeddings": "Storage",
-            "Acquire 1M Agent Orchestration API Credits Tier": "API"
-        }
-        
-    with s_col2:
-        allow_upsell = st.checkbox("Allow Autonomous Cross-sell Negotiation", value=True)
-        agent_budget = st.number_input("Buyer Agent Allocation (?)", min_value=1000.0, max_value=25000.0, value=8000.0, step=500.0)
+    with col_custom:
+        if preset_choice == "Custom Natural Language Command ??":
+            prompt_input = st.text_input("Enter Autonomous Buyer Intent Prompt", value="I need high-performance GPU compute cluster for model fine-tuning under budget")
+            agent_budget = st.number_input("Autonomous Spending Budget (?)", min_value=500.0, max_value=25000.0, value=8000.0, step=500.0)
+        else:
+            preset_map = {
+                "Deploy Cloud GPU Cluster for LLM Training (Target: ?8,000 budget)": ("Deploy Cloud GPU Cluster for LLM Training", 8000.0),
+                "Procure Enterprise 24/7 Priority SLA Support Pass (Target: ?2,500 budget)": ("Procure 24/7 Priority SLA Support Pass", 2500.0),
+                "Expand Vector DB Storage Tier for RAG Embeddings (Target: ?3,000 budget)": ("Expand Vector DB Storage Tier", 3000.0),
+                "Acquire 1M Agent Orchestration API Credits Tier (Target: ?4,000 budget)": ("Acquire 1M Agent Orchestration API Credits", 4000.0)
+            }
+            prompt_input, agent_budget = preset_map[preset_choice]
+            st.info(f"**Selected Prompt:** `{prompt_input}` | **Budget:** ?{agent_budget:,.2f}")
 
-    launch_btn = st.button("?? Trigger Autonomous Agent Transaction", type="primary", use_container_width=True)
+    allow_upsell = st.checkbox("Allow Autonomous Cross-sell Bundle Negotiation", value=True)
+    launch_btn = st.button("?? Trigger Autonomous Agent Commerce Transaction", type="primary", use_container_width=True)
 
     if launch_btn:
         buyer_agent = AutonomousBuyerAgent(
@@ -165,10 +171,10 @@ with tab_sim:
             failure_sentinel=st.session_state.sentinel
         )
         
-        with st.spinner("Autonomous AI Buyer executing protocol discovery & bounded checkout..."):
-            time.sleep(0.4)
+        with st.spinner("Autonomous AI Buyer Agent executing AP2 protocol discovery & bounded checkout..."):
+            time.sleep(0.3)
             res = buyer_agent.run_agentic_purchase_flow(
-                intent_query=intent_query_map[buyer_intent],
+                natural_prompt=prompt_input,
                 user_budget=agent_budget,
                 accept_upsell=allow_upsell
             )
@@ -185,38 +191,38 @@ with tab_sim:
             with c1:
                 st.metric("Razorpay Order ID", res["order"]["order_id"])
             with c2:
-                st.metric("Total Amount", f"?{res['total_amount_inr']:,.2f}")
+                st.metric("Total Settled Amount", f"?{res['total_amount_inr']:,.2f}")
             with c3:
                 st.metric("Items in Cart", len(res["cart"]))
             with c4:
-                st.metric("Gate Risk Score", f"{res['gate_evaluation']['risk_score']} / 100")
+                st.metric("Safety Gate Risk Score", f"{res['gate_evaluation']['risk_score']} / 100")
 
             trace_col, qr_col = st.columns([2, 1])
             with trace_col:
-                st.markdown("#### ?? Agentic Execution Trace")
+                st.markdown("#### ?? Multi-Agent Protocol Execution Trace")
                 for step in res["trace"]:
-                    st.markdown(f'<div class="agent-step"><b>{step["step"]}</b><br/>{step["detail"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="agent-step"><b>{step["step"]}</b> ({step.get("agent", "System")})<br/>{step["detail"]}</div>', unsafe_allow_html=True)
                     
             with qr_col:
                 st.markdown("#### ?? Dynamic UPI QR (NPCI UAP)")
-                st.image(res["qr_code_image"], caption="Scan & Pay via any UPI App", width=220)
+                st.image(res["qr_code_image"], caption="Scan & Pay via any UPI App (GPay / PhonePe / Paytm)", width=220)
                 st.markdown(f"[?? Open Razorpay Payment Link]({res['payment_link']['short_url']})")
         else:
             st.error(f"? Transaction Stopped by Sentinel at {res['stage']} Stage: {res['error']}")
             st.markdown("#### ?? Execution Trace")
             for step in res["trace"]:
-                st.markdown(f'<div class="agent-step"><b>{step["step"]}</b><br/>{step["detail"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="agent-step"><b>{step["step"]}</b> ({step.get("agent", "System")})<br/>{step["detail"]}</div>', unsafe_allow_html=True)
 
 # 2. Razorpay Checkout & Dynamic QR Tab
 with tab_checkout:
     st.markdown("### ?? Razorpay Payment Rails & Smart Checkout")
-    st.write("Generate dynamic Razorpay orders and inspect real-time transaction payloads.")
+    st.write("Generate dynamic Razorpay orders, payment links, and inspect payload signatures.")
     
     co_col1, co_col2 = st.columns(2)
     with co_col1:
         custom_amt = st.number_input("Custom Payment Amount (?)", min_value=100.0, max_value=20000.0, value=2499.0, step=100.0)
-        custom_desc = st.text_input("Order Description", value="AI Agent Server Allocation")
-        if st.button("Generate Razorpay Order & QR"):
+        custom_desc = st.text_input("Order Description", value="AI Agent Infrastructure Node Allocation")
+        if st.button("Generate Razorpay Order & Dynamic UPI QR"):
             order_info = rzp_client.create_order(custom_amt, f"rcpt_{int(time.time())}")
             plink_info = rzp_client.create_payment_link(custom_amt, custom_desc)
             qr_data = rzp_client.generate_upi_qr_code(custom_amt, order_info["order_id"])
@@ -244,13 +250,13 @@ with tab_growth:
     
     g_col1, g_col2 = st.columns(2)
     with g_col1:
-        st.markdown("#### ?? Active Bundle Strategy")
+        st.markdown("#### ?? Active Dynamic Bundle Strategy")
         st.info("?? **GPU Cluster + 24/7 SLA Support:** 15% Bundle Discount automatically applied when AI buyer agent detects SLA dependencies.")
         st.info("?? **Vector DB + GPU Compute:** 10% Bundle Discount for high-throughput RAG workloads.")
         
     with g_col2:
-        st.markdown("#### ?? Abandonment Recovery Engine")
-        st.write("Simulate checkout drop-off and trigger autonomous bounded win-back intervention.")
+        st.markdown("#### ?? Autonomous Checkout Abandonment Recovery")
+        st.write("Simulate an AI buyer stalling at checkout and trigger an automated bounded win-back intervention.")
         if st.button("Trigger Drop-off Recovery Sequence"):
             sample_cart = [{"id": "prod_dev_server", "price_inr": 2499.0, "quantity": 1}]
             recovery_data = st.session_state.growth_engine.trigger_dropoff_recovery(sample_cart, "User paused at payment screen")
